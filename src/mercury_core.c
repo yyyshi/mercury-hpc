@@ -2675,6 +2675,7 @@ hg_core_addr_lookup(struct hg_core_private_class *hg_core_class,
     } else {
 #endif
         /* Remote lookup */
+        // 远端地址
         na_class_p = &hg_core_addr->core_addr.core_class->na_class;
         na_addr_p = &hg_core_addr->core_addr.na_addr;
         na_addr_serialize_size_p = &hg_core_addr->na_addr_serialize_size;
@@ -2684,6 +2685,7 @@ hg_core_addr_lookup(struct hg_core_private_class *hg_core_class,
 #endif
 
     /* Lookup adress */
+    // 查找远端地址，填充数据
     na_ret = NA_Addr_lookup(*na_class_p, name_str, na_addr_p);
     HG_CHECK_SUBSYS_ERROR(addr, na_ret != NA_SUCCESS, error, ret,
         (hg_return_t) na_ret, "Could not lookup address %s (%s)", name_str,
@@ -3916,6 +3918,7 @@ hg_core_forward(struct hg_core_private_handle *hg_core_handle,
 
     /* If addr is self, forward locally, otherwise send the encoded buffer
      * through NA and pre-post response */
+    // 对应网卡的接口： hg_core_forward_na
     ret = hg_core_handle->ops.forward(hg_core_handle);
     HG_CHECK_SUBSYS_HG_ERROR(rpc, error, ret, "Could not forward buffer");
 
@@ -4021,6 +4024,8 @@ hg_core_forward_na(struct hg_core_private_handle *hg_core_handle)
     hg_atomic_or32(&hg_core_handle->status, HG_CORE_OP_POSTED);
 
     /* Post send (input) */
+    // 发送数据
+    // todo: 发送到网卡上了，那么app 怎么知道去网卡的哪个位置读取的数据呢，这个应该不需要ofi 库接口的使用者关心吧
     na_ret = NA_Msg_send_unexpected(hg_core_handle->na_class,
         hg_core_handle->na_context, hg_core_send_input_cb, hg_core_handle,
         hg_core_handle->core_handle.in_buf, hg_core_handle->in_buf_used,

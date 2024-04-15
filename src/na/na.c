@@ -1121,6 +1121,7 @@ NA_Addr_lookup(na_class_t *na_class, const char *name, na_addr_t **addr_p)
 
     NA_LOG_SUBSYS_DEBUG(addr, "Looking up addr %s", short_name);
 
+    // 查找地址，比如open fabric interface 会走这个函数： na_ofi_addr_lookup
     ret = na_class->ops->addr_lookup(na_class, short_name, addr_p);
     NA_CHECK_SUBSYS_NA_ERROR(
         addr, error, ret, "Could not lookup address for %s", short_name);

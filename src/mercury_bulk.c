@@ -466,6 +466,7 @@ hg_bulk_transfer_segments_na(na_class_t *na_class, na_context_t *na_context,
 /**
  * NA_Put wrapper
  */
+// 对应的是fetch 操作
 static HG_INLINE na_return_t
 hg_bulk_na_put(na_class_t *na_class, na_context_t *context, na_cb_t callback,
     void *arg, na_mem_handle_t *local_mem_handle, na_offset_t local_offset,
@@ -481,6 +482,7 @@ hg_bulk_na_put(na_class_t *na_class, na_context_t *context, na_cb_t callback,
 /**
  * NA_Get wrapper
  */
+// 对应的update 操作
 static HG_INLINE na_return_t
 hg_bulk_na_get(na_class_t *na_class, na_context_t *context, na_cb_t callback,
     void *arg, na_mem_handle_t *local_mem_handle, na_offset_t local_offset,
@@ -1912,6 +1914,7 @@ error:
 }
 
 /*---------------------------------------------------------------------------*/
+// hg_bulk_xxx 中有本地和对端的内存描述符，根据描述符可以获得内存hdl
 static hg_return_t
 hg_bulk_transfer(hg_core_context_t *core_context, hg_cb_t callback, void *arg,
     hg_bulk_op_t op, struct hg_core_addr *origin_addr, hg_uint8_t origin_id,
@@ -2008,17 +2011,20 @@ hg_bulk_transfer(hg_core_context_t *core_context, hg_cb_t callback, void *arg,
             hg_bulk_op_id->na_class = hg_bulk_origin->na_class;
             hg_bulk_op_id->na_context = HG_Core_context_get_na(core_context);
             na_origin_addr = HG_Core_addr_get_na(origin_addr);
+            // mem 描述符是从hg_bulk 中获取的
             origin_mem_descs = &hg_bulk_origin->na_mem_descs;
             local_mem_descs = &hg_bulk_local->na_mem_descs;
 #ifdef NA_HAS_SM
         }
 #endif
 
+        // 根据mem 描述符获取本地和远端内存hdl
         origin_mem_handles =
             HG_BULK_MEM_HANDLES(origin_mem_descs, origin_count, origin_flags);
         local_mem_handles =
             HG_BULK_MEM_HANDLES(local_mem_descs, local_count, local_flags);
 
+        // origin mem hdl 为remote 内存hdl
         ret = hg_bulk_transfer_na(op, na_origin_addr, origin_id,
             origin_segments, origin_count, origin_mem_handles, origin_flags,
             origin_offset, local_segments, local_count, local_mem_handles,
@@ -2158,6 +2164,7 @@ hg_bulk_transfer_na(hg_bulk_op_t op, na_addr_t *na_origin_addr,
     hg_return_t ret;
 
     /* Map op to NA op */
+    // pull 是update，push 是fetch
     switch (op) {
         case HG_BULK_PUSH:
             na_bulk_op = hg_bulk_na_put;
@@ -2185,6 +2192,15 @@ hg_bulk_transfer_na(hg_bulk_op_t op, na_addr_t *na_origin_addr,
         HG_LOG_SUBSYS_DEBUG(
             bulk, "Transferring data through NA in single operation");
 
+        // rdma 读写
+        /*
+        hg_bulk_na_put(na_class_t *na_class, na_context_t *context, na_cb_t callback,
+        void *arg, na_mem_handle_t *local_mem_handle, na_offset_t local_offset,
+        na_mem_handle_t *remote_mem_handle, na_offset_t remote_offset,
+        size_t data_size, na_addr_t *remote_addr, uint8_t remote_id,
+        na_op_id_t *op_id)
+        */
+        // todo: 第5、7个参数为本地的内存地址hdl 和远端内存地址hdl，是怎么获取到的
         na_ret = na_bulk_op(hg_bulk_op_id->na_class, hg_bulk_op_id->na_context,
             hg_bulk_transfer_cb, hg_bulk_op_id, local_mem_handles[0],
             local_offset, origin_mem_handles[0], origin_offset, size,
@@ -2245,6 +2261,7 @@ hg_bulk_transfer_na(hg_bulk_op_t op, na_addr_t *na_origin_addr,
             na_op_ids = hg_bulk_na_op_ids->s;
 
         /* Do actual transfer */
+        // 执行实际的数据传输，na_bulk_op 表示传输模式是推数据还是拉数据
         ret = hg_bulk_transfer_segments_na(hg_bulk_op_id->na_class,
             hg_bulk_op_id->na_context, na_bulk_op, hg_bulk_transfer_cb,
             hg_bulk_op_id, na_origin_addr, origin_id, origin_segments,
@@ -2837,6 +2854,7 @@ HG_Bulk_transfer(hg_context_t *context, hg_cb_t callback, void *arg,
         (void *) hg_bulk_origin, (void *) hg_bulk_local);
 
     /* Do bulk transfer */
+    // hg_bulk 结构中含有mem 描述符，描述符里有内存hdl 信息
     ret = hg_bulk_transfer(context->core_context, callback, arg, op,
         (hg_core_addr_t) origin_addr, 0, hg_bulk_origin, origin_offset,
         hg_bulk_local, local_offset, size, op_id);
@@ -2896,6 +2914,7 @@ HG_Bulk_bind_transfer(hg_context_t *context, hg_cb_t callback, void *arg,
         (void *) hg_bulk_origin, (void *) hg_bulk_local);
 
     /* Do bulk transfer */
+    // hg_bulk 结构中含有mem 描述符，描述符里有内存hdl 信息
     ret = hg_bulk_transfer(context->core_context, callback, arg, op,
         hg_bulk_origin->addr, hg_bulk_origin->context_id, hg_bulk_origin,
         origin_offset, hg_bulk_local, local_offset, size, op_id);

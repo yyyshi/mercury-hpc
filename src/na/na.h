@@ -1168,6 +1168,7 @@ NA_Msg_send_unexpected(na_class_t *na_class, na_context_t *context,
     void *plugin_data, na_addr_t *dest_addr, uint8_t dest_id, na_tag_t tag,
     na_op_id_t *op_id)
 {
+    // na_ofi_msg_send 或者是tag send
     return na_class->ops->msg_send_unexpected(na_class, context, callback, arg,
         buf, buf_size, plugin_data, dest_addr, dest_id, tag, op_id);
 }
@@ -1240,6 +1241,7 @@ NA_Put(na_class_t *na_class, na_context_t *context, na_cb_t callback, void *arg,
     size_t data_size, na_addr_t *remote_addr, uint8_t remote_id,
     na_op_id_t *op_id)
 {
+    // 根据不同的网卡实现。如open fabric interface: na_ofi_put/na_ofi_get
     return na_class->ops->put(na_class, context, callback, arg,
         local_mem_handle, local_offset, remote_mem_handle, remote_offset,
         data_size, remote_addr, remote_id, op_id);

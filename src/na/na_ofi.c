@@ -3021,6 +3021,7 @@ na_ofi_addr_key_lookup(struct na_ofi_class *na_ofi_class,
     na_return_t ret;
 
     /* Lookup address */
+    // 查找地址
     na_ofi_addr =
         na_ofi_addr_map_lookup(&na_ofi_class->domain->addr_map, addr_key);
     if (na_ofi_addr == NULL || ((fi_auth_key != FI_ADDR_NOTAVAIL) &&
@@ -4063,6 +4064,7 @@ na_ofi_class_env_config(struct na_ofi_class *na_ofi_class)
     na_return_t ret;
 
     /* Set unexpected msg callbacks */
+    // todo: 什么是tagged data，就是有额外的元数据等信息的数据传输
     env = getenv("NA_OFI_UNEXPECTED_TAG_MSG");
     if (env == NULL || env[0] == '0' || tolower(env[0]) == 'n') {
         na_ofi_class->msg_send_unexpected = na_ofi_msg_send;
@@ -5864,6 +5866,7 @@ na_ofi_msg_send(
         msg_info->buf.const_ptr, msg_info->buf_size, msg_info->desc,
         msg_info->tag & NA_OFI_TAG_MASK, msg_info->fi_addr, context);
 
+    // msg send
     rc = fi_senddata(ep, msg_info->buf.const_ptr, msg_info->buf_size,
         msg_info->desc, msg_info->tag & NA_OFI_TAG_MASK, msg_info->fi_addr,
         context);
@@ -5962,6 +5965,7 @@ na_ofi_tag_send(
         msg_info->buf.const_ptr, msg_info->buf_size, msg_info->desc,
         msg_info->fi_addr, msg_info->tag, context);
 
+    // tag send
     rc = fi_tsend(ep, msg_info->buf.const_ptr, msg_info->buf_size,
         msg_info->desc, msg_info->fi_addr, msg_info->tag, context);
     if (rc == 0)
@@ -8030,11 +8034,13 @@ na_ofi_addr_lookup(na_class_t *na_class, const char *name, na_addr_t **addr_p)
         name);
 
     /* Convert name to raw address */
+    // 转化name 为raw 地址
     ret = na_ofi_str_to_raw_addr(name, addr_format, &addr_key.addr);
     NA_CHECK_SUBSYS_NA_ERROR(
         addr, error, ret, "Could not convert string to address");
 
     /* Create key from addr for faster lookups */
+    // 创建key
     addr_key.val = na_ofi_raw_addr_to_key(addr_format, &addr_key.addr);
     NA_CHECK_SUBSYS_ERROR(addr, addr_key.val == 0, error, ret,
         NA_PROTONOSUPPORT, "Could not generate key from addr");
@@ -8042,11 +8048,13 @@ na_ofi_addr_lookup(na_class_t *na_class, const char *name, na_addr_t **addr_p)
     /* Lookup key and create new addr if it does not exist.
      * When using auth keys, peers must either share the same global key or use
      * the same base key when using FI_AV_AUTH_KEY to be able to communicate. */
+    // 根据key 查找地址，如果地址不存在，创建一个新的
     ret = na_ofi_addr_key_lookup(
         na_ofi_class, &addr_key, FI_ADDR_NOTAVAIL, &na_ofi_addr);
     NA_CHECK_SUBSYS_NA_ERROR(
         addr, error, ret, "Could not lookup address key for %s", name);
 
+    // 返回这个地址
     *addr_p = (na_addr_t *) na_ofi_addr;
 
     return NA_SUCCESS;
